@@ -1,12 +1,14 @@
+-- looking at data I will be using for analysis using basic SQL SELECT query
+-- 1. covid deaths table
+-- 2. covid vaccinations table
+
 SELECT *
 FROM [portfolio-project].dbo.coviddeaths
+ORDER BY location, date;
+
+SELECT *
+FROM [portfolio-project]..covidvaccinations
 ORDER BY 3, 4;
-
---SELECT *
---FROM [portfolio-project]..covidvaccinations
---ORDER BY 3, 4;
-
--- select data I will be using for analysis using basic SQL SELECT query
 
 SELECT location, date, total_cases, new_cases, total_deaths, population
 FROM [portfolio-project]..coviddeaths
@@ -18,7 +20,8 @@ SELECT location, date, total_cases, total_deaths, (total_deaths/total_cases)
 FROM [portfolio-project]..coviddeaths
 ORDER BY location, date;
 
--- does not work due to t_d and t_c being nvarchar. update to int.
+-- does not work due to t_d and t_c being nvarchar data type 
+-- update to int and rerun
 
 ALTER TABLE [portfolio-project]..coviddeaths
 ALTER COLUMN total_deaths INT;
@@ -30,7 +33,8 @@ SELECT location, date, total_cases, total_deaths, (total_deaths/total_cases)
 FROM [portfolio-project]..coviddeaths
 ORDER BY location, date;
 
--- calc did not work as int. change t_d and t_c to decimal. 
+-- calc still does not work as int
+-- update to decimal and rerun
 
 ALTER TABLE [portfolio-project]..coviddeaths
 ALTER COLUMN total_deaths DECIMAL;
@@ -38,39 +42,41 @@ ALTER COLUMN total_deaths DECIMAL;
 ALTER TABLE [portfolio-project]..coviddeaths
 ALTER COLUMN total_cases DECIMAL;
 
--- shows death rate of covid
 SELECT location, date, total_cases, total_deaths, (total_deaths/total_cases)
 FROM [portfolio-project]..coviddeaths
 ORDER BY location, date;
 
--- update to percentage and add column name
-
+-- update column to percentage and add column name
 -- shows death rate of covid as percentage
+
 SELECT location, date, total_cases, total_deaths, (total_deaths/total_cases)*100 as death_percentage
 FROM [portfolio-project]..coviddeaths
 ORDER BY location, date;
 
 -- shows death rate of covid for US
+
 SELECT location, date, total_cases, total_deaths, (total_deaths/total_cases)*100 as death_percentage
 FROM [portfolio-project]..coviddeaths
-WHERE location like 'United States'
+WHERE location = 'United States'
 ORDER BY location, date;
 
--- shows death rate of covid in US ordered by death percentage high to low
+-- shows dates with highest covid death rate in US 
+
 SELECT location, date, total_cases, total_deaths, (total_deaths/total_cases)*100 as death_percentage
 FROM [portfolio-project]..coviddeaths
 WHERE location like 'United States'
 ORDER BY death_percentage DESC;
 
 -- looking at total cases vs. population
+-- shows what percentage of US population contracted covid
 
--- shows what percentage of population contracted covid
 SELECT location, date, total_cases, population, (total_cases/population)*100 as percent_population_infected
 FROM [portfolio-project]..coviddeaths
-WHERE location like 'United States'
+WHERE location = 'United States'
 ORDER BY location, date;
 
 -- looking at countries with highest infection rate per population
+
 SELECT 
 	location, 
 	MAX(total_cases) as highest_number_of_cases, 
@@ -84,7 +90,7 @@ GROUP BY
 ORDER BY 
 	percent_population_infected DESC;
 
--- countries with highest death rate per population
+-- looking at countries with highest number of covid deaths
 
 SELECT 
 	location, 
@@ -99,10 +105,11 @@ ORDER BY
 	total_death_count DESC;
 
 
--- LOOKING AT DATA PER CONTINENT INSTEAD OF COUNTRY
---might try IF statement to add null continent info - if continent = null, location is continent
+-- CONTINENT DATA
+
 
 -- showing continents with highest death count 
+
 SELECT 
 	continent, 
 	MAX(total_deaths) as total_death_count
@@ -116,11 +123,12 @@ ORDER BY
 	total_death_count DESC;
 
 
--- GLOBAL NUMBERS
+-- GLOBAL DATA
 
 
 --looking at total cases vs total deaths each day globally
 --used NULLIF to bypass divide by zero error
+
 SELECT 
 	date, 
 	SUM(total_cases) as total_cases_globally,
@@ -135,7 +143,8 @@ GROUP BY
 ORDER BY 
 	date;
 
--- looking at total cases, deaths, and death rate globally
+-- looking at global total cases, deaths, and death rate
+
 SELECT 
 	SUM(new_cases) as total_cases_globally,
 	SUM(new_deaths) as total_deaths_globally,
@@ -165,7 +174,6 @@ SELECT
 		OVER(PARTITION BY dea.location 
 		ORDER BY dea.location, dea.date)
 		as rolling_total_vaccinations
-	--, (rolling_total_vaccinations/population)*100
 FROM [portfolio-project]..coviddeaths dea
 	JOIN [portfolio-project]..covidvaccinations vax
 		ON dea.location = vax.location
@@ -176,10 +184,10 @@ ORDER BY
 	dea.location,
 	dea.date;
 
--- USE CTE
+-- options for calculating population vs vax
+-- 1. USE CTE
 
-WITH popvsvax (continent, location, date, population, new_vaccinations, rolling_total_vaccinations)
-as
+WITH popvsvax (continent, location, date, population, new_vaccinations, rolling_total_vaccinations) AS
 (
 SELECT 
 	dea.continent,
@@ -197,15 +205,12 @@ FROM [portfolio-project]..coviddeaths dea
 		AND dea.date = vax.date
 WHERE 
 	dea.continent is not null
---ORDER BY 
-	--dea.location,
-	--dea.date
 )
 SELECT *, (rolling_total_vaccinations/population)*100 as percent_population_vaccinated
 FROM popvsvax
 ORDER BY location, date;
 
---USE TEMP TABLE
+-- 2. USE TEMP TABLE
 
 DROP TABLE IF exists #percent_population_vaccinated
 CREATE TABLE #percent_population_vaccinated
@@ -234,17 +239,14 @@ FROM [portfolio-project]..coviddeaths dea
 		AND dea.date = vax.date
 WHERE 
 	dea.continent is not null
---ORDER BY 
-	--dea.location,
-	--dea.date
-
+	
 SELECT *, (rolling_total_vaccinations/population)*100 as percent_population_vaccinated
 FROM #percent_population_vaccinated
 ORDER BY location, date;
 
 --CREATING VIEW TO STORE DATA FOR LATER VIZ
 
-CREATE VIEW percent_population_vaccinated as 
+CREATE VIEW percent_population_vaccinated AS 
 SELECT 
 	dea.continent,
 	dea.location,
@@ -261,7 +263,6 @@ FROM [portfolio-project]..coviddeaths dea
 		AND dea.date = vax.date
 WHERE 
 	dea.continent is not null
---ORDER BY dea.location, dea.date
 
 SELECT *
 FROM percent_population_vaccinated
