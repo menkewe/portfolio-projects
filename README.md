@@ -10,3 +10,5 @@ Below, you will find links to the public data sources I used for these portfolio
    https://app.mavenanalytics.io/guided-projects/72ec0a0d-bc7d-4ac4-a8da-da811f9061d6
 4. Film Data
    https://www.kaggle.com/datasets/danielgrijalvas/movies/data
+5. Song Data
+   https://www.kaggle.com/datasets/waqi786/songs-dataset-2000-2020-50k-records
